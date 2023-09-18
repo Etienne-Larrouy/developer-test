@@ -1,16 +1,19 @@
 from sanic import Sanic
 from sanic.response import json
 
+from src.backend.model.empire_plan import EmpirePlan
+from src.backend.model.scnario import Scenario
+from src.backend.compute_odds import Odds
+import json
+
 app = Sanic("odds")
-app.ctx.db = Database()
 
-@app.route('/api/')
+milennium_config = 
+odds = Odds(milennium_config)
+
+@app.route('/odds')
 async def odds_from_json(request):
-    json = request.file
-    return json({'hello': 'world'})
-
-@app.route('/')
-async def test(request):
+    empire_plan_json = rrequest.files.get("empire_plan.json").body
     return json({'hello': 'world'})
 
 if __name__ == '__main__':
