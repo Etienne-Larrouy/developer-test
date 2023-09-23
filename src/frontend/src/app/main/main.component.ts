@@ -24,7 +24,11 @@ export class MainComponent {
 
     // Reach server to get odds from json file
     getOdds(json_data: any){
-        this.service.getOddsFromfile(json_data).subscribe((data: Odds) => this.odds = data.odds);
+        this.service.getOddsFromfile(json_data).subscribe((data: Odds) => {
+            this.odds = data.odds
+        }, error => {
+            console.log(error)
+        });
     }
 }
 
