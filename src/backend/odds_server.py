@@ -1,17 +1,19 @@
+import json
+
 from sanic import Sanic
-from sanic.response import json
+from sanic.response import json as sanicjson
+from sanic.exceptions import SanicException
 
 from src.backend.model.empire_plan import EmpirePlan
 from src.backend.model.scenario import Scenario
 from src.backend.config import MILLENIUM_CONFIG
-from src.backend.compute_odds import Odds
+from src.backend.odds_journey import Odds
 from src.backend.database_manager import Db_manager
 
-import json
 app = Sanic("odds")
 
-odds = Odds(MILLENIUM_CONFIG['departure'], MILLENIUM_CONFIG['arrival'], MILLENIUM_CONFIG['autonomy'])
-db_manager = Db_manager(MILLENIUM_CONFIG['departure'])
+db_manager = Db_manager(MILLENIUM_CONFIG['routes_db'])
+odds = Odds(MILLENIUM_CONFIG['departure'], MILLENIUM_CONFIG['arrival'], MILLENIUM_CONFIG['autonomy'], db_manager)
 
 @app.route('/odds')
 async def odds_from_json(request):
@@ -24,6 +26,11 @@ async def odds_from_json(request):
     Returns:
         Json: Odds value
     """
-    empire_plan_json = request.files.get("empire_plan.json").body
-    odds.start_journey(empire_plan_json)
-    return json(empire_plan_json)
+    try:
+        empire_plan_json = request.files.get("empire_plan.json").body
+        plan = EmpirePlan(**json.loads(empire_plan_json))
+        odds.start_journey(plan)
+    except Exception as e:
+        raise SanicException("Something went wrong.", status_code=500) # , quiet=True
+        
+    return sanicjson({"lol":"oui"})
