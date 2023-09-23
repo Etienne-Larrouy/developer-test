@@ -9,7 +9,7 @@
           <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Click to upload empire plan</span> or drag and drop</p>
           <p class="text-xs text-gray-500 dark:text-gray-400">JSON</p>
       </div>
-      <input id="dropzone-file" type="file" class="hidden" />
+      <input id="dropzone-file" type="file" class="hidden" (change)="onFileSelect($event.target)"/>
   </label>
   
   <span *ngIf="odds != -1" class="text-base font-extrabold md:text-1xl lg:text-2xl text-gray-900 dark:text-white mt-20 mb-5 w-9/12">The odds of the Millennium Falcon reaching Endor are</span>
