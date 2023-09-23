@@ -11,7 +11,9 @@ export class OddsService {
 
      // Get odds from json file
      getOddsFromfile(json_data: any) {
-        return this.http.post<Odds>(this.baseUrl + '/odds', json_data);
+        const formData = new FormData();
+        formData.append("empire_plan.json", json_data, "empire_plan.json");
+        return this.http.post<Odds>(this.baseUrl + '/odds', formData);
     }
 
 }
