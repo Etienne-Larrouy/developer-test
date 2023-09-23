@@ -1,5 +1,9 @@
 import sqlite3
 import os
+from utils.logger import Logger
+
+# instance of logger class
+logger = Logger.get_instance()
 
 class Db_manager():
     def __init__(self, db_url):
@@ -11,6 +15,7 @@ class Db_manager():
         """
         if os.path.exists(db_url):
             self.__con = sqlite3.connect(db_url)
+            logger.get_logger().info(f"Database succesfully opened.")
         else:
             raise Exception("Database doesn't exist.")
 

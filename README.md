@@ -48,8 +48,9 @@ python -m pytest ./tests/
 To run the server on a Docker container, please execute the following from the root directory:
 
 ```bash
+cd src/backend
 # building the image
-docker build -t odds_server ./src/backend
+docker build -t odds_server .
 
 # starting up a container
 docker run -p 8080:8080 odds_server

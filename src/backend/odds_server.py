@@ -5,16 +5,18 @@ from sanic.response import json as sanicjson
 from sanic.exceptions import SanicException
 
 from model.empire_plan import EmpirePlan
+from sanic_cors import CORS
 from config import MILLENIUM_CONFIG
 from odds_journey import Odds
 from database_manager import Db_manager
 
-app = Sanic("odds")
+app = Sanic(__name__)
+CORS(app, automatic_options=True)
 
 db_manager = Db_manager(MILLENIUM_CONFIG['routes_db'])
 odds = Odds(MILLENIUM_CONFIG['departure'], MILLENIUM_CONFIG['arrival'], MILLENIUM_CONFIG['autonomy'], db_manager)
 
-@app.route('/odds')
+@app.route('/odds', methods=['POST', 'OPTIONS'])
 async def odds_from_json(request):
     """
     _summary_
@@ -35,3 +37,5 @@ async def odds_from_json(request):
         raise SanicException("Something went wrong.", status_code=500) # , quiet=True
         
 
+if __name__ == "__main__":
+    app.run(port=8080)
