@@ -56,7 +56,6 @@ class Odds():
             # Keep only best odds
             if new_odds > best_odds:
                 best_odds = new_odds
-
         
         logger.get_logger().info(f"Odds: {best_odds}")
        
@@ -107,7 +106,6 @@ class Odds():
                                 # Try to jump only if time allows it
                                 if hop.get_duration() + distance <= countdown:
                                     jumped = False
-                                    need_refuel = False
 
                                     # Jump to next planet
                                     if distance <= hop.get_autonomy():
@@ -123,7 +121,6 @@ class Odds():
                                     
                                     elif hop.get_duration() + distance + 1 <= countdown:
                                         jumped = True
-                                        need_refuel = True
                                         # refuel before jumping then jumps
                                         new_hop = copy.deepcopy(hop)
                                         new_hop.add_hop(hop.get_current_planet(), new_hop.get_duration() + 1)
@@ -137,23 +134,21 @@ class Odds():
                         
                                         # Check if we can wait one more day before jumping if there are hunters on next planet
                                         if self.hunters_on_next_planet(hunters, next_planet, new_hop.get_duration()) and hop.get_duration() + distance + 1 <= countdown:
-                                            for i in range(countdown - (hop.get_duration() + distance) - 1):
+                                            while (countdown - (hop.get_duration() + distance) - 1) > 0:
+                                                # Wait one more day before jumping
+                                                new_hop = copy.deepcopy(hop)
+                                                new_hop.add_duration(1)
+                                                new_hop.add_hop(hop.get_current_planet(), new_hop.get_duration())
+                                                new_hop.set_autonomy(max_autonomy)
 
-                                                # IF refuel is needed we can't jump immediatly
-                                                if need_refuel and i != 1:
-                                                    # Wait one more day before jumping
-                                                    new_hop = copy.deepcopy(hop)
-                                                    new_hop.add_duration(1)
-                                                    new_hop.add_hop(hop.get_current_planet(), new_hop.get_duration())
+                                                hop = copy.deepcopy(new_hop)
 
-                                                    hop = copy.deepcopy(new_hop)
+                                                # Jump to next planet
+                                                new_hop.add_duration(distance)
+                                                new_hop.add_hop(next_planet, new_hop.get_duration())
+                                                new_hop.remove_autonomy(distance)
 
-                                                    # Jump to next planet
-                                                    new_hop.add_duration(distance)
-                                                    new_hop.add_hop(next_planet, new_hop.get_duration())
-                                                    new_hop.set_autonomy(max_autonomy)
-
-                                                    next_possible_hops.append(new_hop)
+                                                next_possible_hops.append(new_hop)
 
 
                         except ValueError:
