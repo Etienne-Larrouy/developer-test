@@ -12,7 +12,7 @@ export class MainComponent {
 
     constructor(private service: OddsService) {}
 
-    odds: number = 0;
+    odds: number = 63;
 
     getOdds(){
         this.service.getOddsFromfile().subscribe((data: Odds) => this.odds = data.odds);

@@ -1,4 +1,10 @@
 import sqlite3
+import copy
+from src.backend.model.path import Path
+from src.backend.utils.logger import Logger
+
+# instance of logger class
+logger = Logger.get_instance()
 
 class Odds():
     def __init__(self, departure, arrival, autonomy, db_manager):
@@ -26,101 +32,178 @@ class Odds():
         try:
             routes = self.__db_manager.list_routes()
         except sqlite3.OperationalError as e:
-            print(f"Error while getting routes list: {e}")
+            logger.get_logger().error(f"Error while getting routes list: {e}")
             raise
     
-        print(f"From: {self.__departure}")
-        print(f"To: {self.__arrival}")
-        print(f"Autonomy: {self.__autonomy}")
-        print(f"Coutdown: {empire_plan.get_countdown()}")
+        logger.get_logger().info(f"From: {self.__departure}")
+        logger.get_logger().info(f"To: {self.__arrival}")
+        logger.get_logger().info(f"Autonomy: {self.__autonomy}")
+        logger.get_logger().info(f"Coutdown: {empire_plan.get_countdown()}")
+
         for h in empire_plan.get_bounty_hunters():
-            print(f"Hunter: planet = {h.get_planet()}, day = {h.get_day()}")
+            logger.get_logger().info(f"Hunter: planet = {h.get_planet()}, day = {h.get_day()}")
 
-        paths = self.next_hop(self.__departure, "", self.__arrival, empire_plan.get_countdown(), self.__autonomy, self.__autonomy, routes, 0, [])
+        paths = self.get_paths(self.__departure, self.__arrival, empire_plan.get_countdown(), self.__autonomy, routes, empire_plan.get_bounty_hunters())
 
-        print(paths)
+        best_odds = 0
 
         # Compute new duration from hunters
         for p in paths:
-            penalty = self.get_hunters_penalty(p[0])
-            p[1]  = penalty * p[1]
+            penalty = self.get_hunters_penalty(p, empire_plan.get_bounty_hunters())
 
-    def next_hop(self, current_planet, origin_planet, destination, countdown, autonomy, max_autonomy, routes, duration, ways):
-        """ Search for next hop
+            new_odds = 1 - penalty
+
+            # Keep only best odds
+            if new_odds > best_odds:
+                best_odds = new_odds
+
+        
+        logger.get_logger().info(f"Odds: {best_odds}")
+       
+        return best_odds
+
+    def get_paths(self, departure, arrival, countdown, max_autonomy, routes, hunters):
+        """ Loof for path from departure to destination following routes
 
         Args:
-            current_planet (_type_): _description_
-            destination (_type_): _description_
-            countdown (_type_): _description_
-            autonomy (_type_): _description_
-            max_autonomy (_type_): _description_
-            routes (_type_): _description_
-            duration (_type_): _description_
-            paths (_type_): _description_
+            departure (str): Departure planet
+            arrival (str): Arrival planet
+            countdown (integer): Countdown before end
+            max_autonomy (integer): Millenium autonomy in days
+            routes (Array): List of routes
+            hunters (Array): List of hunters
+
+        Returns:
+            Array: List of possible paths
         """
-        # Search for next planet hop in available routes
-        for r in routes:
-            __planets = r[0:2]
-            __distance = r[2]
-
-            # If current planet is in the planet couple and origin is not (to avoid backward hop) we try to hop
-            try:
-                planet_idx = __planets.index(current_planet)
-
-                print(__planets)
-                print(planet_idx)
-                print( origin_planet not in __planets)
-                print(f"origin {origin_planet}")
-                print(f"duration {duration}")
-                print(f"duration + __distance  {duration + __distance }")
-                print(f"countdown  {countdown}")
-
-                if origin_planet not in __planets:
-                    # Try to jump only if time allows it
-                    if duration + __distance < countdown:
-                        # Jump to next planet
-                        if __distance < autonomy:
-                            autonomy -= __distance
-                            duration += __distance
-
-                            # Look for next planet index
-                            next_planet_idx = (planet_idx + 1) % 2
-                            next_planet = __planets[next_planet_idx]
-                            ways.append((next_planet, duration))
-
-                            print(f"autonomy {autonomy}")
-                            print(f"duration {duration}")
-                            print(f"next_planet {next_planet}")
-                            print(f"ways {ways}")
-                        # refuel
-                        else:
-                            next_planet = current_planet
-                            duration += 1
-                            autonomy = max_autonomy
-
-                        # While destination not reached => next hop
-                        if next_planet != destination:
-                            for __new_ways in self.next_hop(next_planet, current_planet, destination, countdown, autonomy, max_autonomy, routes, duration, ways):
-                                __next_hop_path = __new_ways[0]
-                                __next_hop_duration = __new_ways[1]
-
-                                # Concat path to get a complete route
-                                if __next_hop_duration <= countdown:
-                                    for i in range(len(ways)):
-                                        ways[i][0] = ways[i] + __next_hop_path
-                                        ways[i][1] = __next_hop_duration
-            except ValueError:
-                # Planet not in planet couple
-                pass
-
-        return ways
         
-    def get_hunters_penalty(self, path):
+        start_route = Path(departure, 0, max_autonomy)
+        possible_hops = [start_route]
+        next_possible_hops = []
+        new_hop = True
+
+        # While a hop is done we continue to search
+        while new_hop:
+            
+            new_hop = False
+
+            # Look for hops for all avilable routes
+            for hop in possible_hops:
+                if arrival != hop.get_current_planet():
+                    for r in routes:
+                        planets = r[0:2]
+                        distance = r[2]
+
+                        try:
+                            # Get next planet name
+                            planet_idx = planets.index(hop.get_current_planet())
+                            next_planet_idx = (planet_idx + 1) % 2
+                            next_planet = planets[next_planet_idx]
+
+                            # Avoid path loop
+                            if not hop.already_went_here(next_planet):
+                                new_hop = True
+
+                                # Try to jump only if time allows it
+                                if hop.get_duration() + distance <= countdown:
+                                    jumped = False
+                                    need_refuel = False
+
+                                    # Jump to next planet
+                                    if distance <= hop.get_autonomy():
+                                        jumped = True
+                                        
+                                        # Update hop
+                                        new_hop = copy.deepcopy(hop)
+                                        new_hop.remove_autonomy(distance)
+                                        new_hop.add_duration(distance)
+                                        new_hop.add_hop(next_planet, new_hop.get_duration())
+
+                                        next_possible_hops.append(new_hop)
+                                    
+                                    elif hop.get_duration() + distance + 1 <= countdown:
+                                        jumped = True
+                                        need_refuel = True
+                                        # refuel before jumping then jumps
+                                        new_hop = copy.deepcopy(hop)
+                                        new_hop.add_hop(hop.get_current_planet(), new_hop.get_duration() + 1)
+                                        new_hop.add_duration(distance + 1)
+                                        new_hop.add_hop(next_planet, new_hop.get_duration())
+                                        new_hop.set_autonomy(max_autonomy)
+
+                                        next_possible_hops.append(new_hop)
+
+                                    if jumped:
+                        
+                                        # Check if we can wait one more day before jumping if there are hunters on next planet
+                                        if self.hunters_on_next_planet(hunters, next_planet, new_hop.get_duration()) and hop.get_duration() + distance + 1 <= countdown:
+                                            for i in range(countdown - (hop.get_duration() + distance) - 1):
+
+                                                # IF refuel is needed we can't jump immediatly
+                                                if need_refuel and i != 1:
+                                                    # Wait one more day before jumping
+                                                    new_hop = copy.deepcopy(hop)
+                                                    new_hop.add_duration(1)
+                                                    new_hop.add_hop(hop.get_current_planet(), new_hop.get_duration())
+
+                                                    hop = copy.deepcopy(new_hop)
+
+                                                    # Jump to next planet
+                                                    new_hop.add_duration(distance)
+                                                    new_hop.add_hop(next_planet, new_hop.get_duration())
+                                                    new_hop.set_autonomy(max_autonomy)
+
+                                                    next_possible_hops.append(new_hop)
+
+
+                        except ValueError:
+                            # Planet not in planet couple
+                            pass
+                else:
+                    next_possible_hops.append(copy.deepcopy(hop))
+    
+            possible_hops = next_possible_hops
+            next_possible_hops = []
+
+        return possible_hops
+    
+    def hunters_on_next_planet(self, hunters, planet, day):
+        """ True if hunters on next planet
+        Args:
+            hunters (Array): List of hunters
+            planet (Str): Next planet
+            day (Integer): Day
+        """
+        hunters_here = False
+
+        for h in hunters:
+            if h.get_planet() == planet and h.get_day() == day:
+                hunters_here = True
+        
+        return hunters_here
+
+    def get_hunters_penalty(self, path, hunters):
         """ Compute hunter delay
 
         Args:
             path (Array): List of planet
+            hunters (Array): List of hunters
 
         Returns
         """
-        return 1
+        penalty = 0
+        caught = 0
+        for h in path.get_hops():
+            for hunt in hunters:
+                # Same day same planet -> we can by caught by hunters
+                if h.get_planet() == hunt.get_planet() and h.get_day() == hunt.get_day():
+
+                    # Compute penalty
+                    if caught == 0:
+                        penalty = 0.1
+                    else:
+                        penalty += pow(9, caught) / pow(10, caught + 1)
+                    
+                    caught +=1
+
+        return penalty
