@@ -4,10 +4,10 @@ from sanic import Sanic
 from sanic.response import json as sanicjson
 from sanic.exceptions import SanicException
 
-from src.backend.model.empire_plan import EmpirePlan
-from src.backend.config import MILLENIUM_CONFIG
-from src.backend.odds_journey import Odds
-from src.backend.database_manager import Db_manager
+from model.empire_plan import EmpirePlan
+from config import MILLENIUM_CONFIG
+from odds_journey import Odds
+from database_manager import Db_manager
 
 app = Sanic("odds")
 

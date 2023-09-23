@@ -1,4 +1,4 @@
-from src.backend.model.hunter import Hunter
+from model.hunter import Hunter
 
 class EmpirePlan():
     def __init__(self, bounty_hunters, countdown):

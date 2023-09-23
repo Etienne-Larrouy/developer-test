@@ -1,4 +1,4 @@
-from src.backend.model.hop import Hop
+from model.hop import Hop
 
 class Path():
     def __init__(self, planet, duration, autonomy):

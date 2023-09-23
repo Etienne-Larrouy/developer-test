@@ -13,7 +13,7 @@ Python 3.8+
 To run the server, please install dependencies:
 
 ```bash
-pip3 install -r ./src/backend/requirements.txt
+pip3 install -r ./requirements.txt
 ```
 
 ### Run dev
@@ -21,7 +21,8 @@ pip3 install -r ./src/backend/requirements.txt
 To run the server for dev, please execute the following from the root directory:
 
 ```bash
-python -m sanic src.backend.odds_server:app --debug --reload
+cd src/backend
+python -m sanic odds_server:app --debug --reload
 ```
 
 ### Run prod
@@ -29,14 +30,15 @@ python -m sanic src.backend.odds_server:app --debug --reload
 To run the server for prod, please execute the following from the root directory:
 
 ```bash
-python -m sanic src.backend.odds_server:app
+cd src/backend
+python -m sanic odds_server:app
 ```
 ### Test
 
 To launch the integration tests, use pytest:
 
 ```bash
-python -m pytest ./src/backend/tests/
+python -m pytest ./tests/
 ```
 
 ### Running with Docker
@@ -47,7 +49,7 @@ To run the server on a Docker container, please execute the following from the r
 
 ```bash
 # building the image
-docker build -t odds_server .
+docker build -t odds_server ./src/backend
 
 # starting up a container
 docker run -p 8080:8080 odds_server

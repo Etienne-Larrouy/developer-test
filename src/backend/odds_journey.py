@@ -1,7 +1,7 @@
 import sqlite3
 import copy
-from src.backend.model.path import Path
-from src.backend.utils.logger import Logger
+from model.path import Path
+from utils.logger import Logger
 
 # instance of logger class
 logger = Logger.get_instance()
