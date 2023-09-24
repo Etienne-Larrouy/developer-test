@@ -1,7 +1,12 @@
 import sqlite3
 import copy
+from model.empire_plan import EmpirePlan
 from model.path import Path
+from database_manager import Db_manager
 from utils.logger import Logger
+import sys
+import json
+import os
 
 # instance of logger class
 logger = Logger.get_instance()
@@ -57,7 +62,7 @@ class Odds():
             if new_odds > best_odds:
                 best_odds = new_odds
         
-        logger.get_logger().info(f"Odds: {best_odds}")
+        logger.get_logger().info(f"Odds: {best_odds}%")
        
         return best_odds
 
@@ -202,3 +207,34 @@ class Odds():
                     caught +=1
 
         return penalty
+    
+
+if __name__ == "__main__":
+ 
+    if len(sys.argv) >= 3:
+        try:
+            # Check files exist
+            if not os.path.isfile(sys.argv[1]):
+                raise Exception(f"'{sys.argv[1]}' doesn't exist")
+            
+            if not os.path.isfile(sys.argv[2]):
+                raise Exception(f"'{sys.argv[2]}' doesn't exist")
+            
+            # Read empire plan
+            with open(sys.argv[2]) as empire_plan_file:
+                plan = EmpirePlan(**json.load(empire_plan_file))
+
+            # Read millenium configuration
+            with open(sys.argv[1]) as millenium_file:
+                millenium_config = json.load(millenium_file)
+                millenium_file_path = os.path.dirname(millenium_file.name)
+
+            db_manager = Db_manager(millenium_config['routes_db'], os.path.join(millenium_file_path, millenium_config['routes_db']))
+            odds = Odds(millenium_config['departure'], millenium_config['arrival'], millenium_config['autonomy'], db_manager)
+
+            odds_result = odds.start_journey(plan) * 100
+        except Exception as e:
+            raise Exception("Something went wrong.")
+    else:
+        logger.get_logger().error(f"Error usage should be: 'python odds_journey.py example1/millennium-falcon.json example1/empire.json'")
+

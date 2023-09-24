@@ -14,6 +14,15 @@ To run the server, please install dependencies:
 
 `pip3 install -r ./requirements.txt`
 
+### CLI execution
+
+To compute odds wihtout server please execute the following:
+
+```bash
+cd src/backend
+python odds_journey.py .\tests\examples\example2\millennium-falcon.json .\tests\examples\example2\empire.json
+```
+
 ### Run dev
 
 To run the server for dev, please execute the following from the root directory:

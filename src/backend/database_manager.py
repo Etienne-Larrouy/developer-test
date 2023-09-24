@@ -6,17 +6,26 @@ from utils.logger import Logger
 logger = Logger.get_instance()
 
 class Db_manager():
-    def __init__(self, db_url):
+    def __init__(self, *db_url):
         """
         Init db connection
 
         Args:
             db_url (string): Db path
         """
-        if os.path.exists(db_url):
-            self.__con = sqlite3.connect(db_url)
-            logger.get_logger().info(f"Database succesfully opened.")
-        else:
+        opened = False
+
+        # Test all url given as param
+        for url in db_url:
+            logger.get_logger().info(f"url: {url}")
+            if os.path.exists(url):
+                self.__con = sqlite3.connect(url)
+                logger.get_logger().info(f"Database succesfully opened.")
+                opened = True
+                break
+
+        # Raise exception if no url worked
+        if not opened:
             raise Exception("Database doesn't exist.")
 
     def list_routes(self):
